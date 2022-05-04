@@ -6,6 +6,14 @@ open Farmer.Arm.Insights
 open Farmer.Arm.LogAnalytics
 
 type AppInsights =
+    static member getConnectionString (resourceId:ResourceId) =
+        ArmExpression
+            .reference(resourceId)
+            .Map(fun r -> r + ".ConnectionString")
+            .WithOwner(resourceId)
+    static member getConnectionString (name:ResourceName, ?resourceGroup, ?resourceType) =
+        let resourceType = resourceType |> Option.defaultValue components
+        AppInsights.getConnectionString(ResourceId.create (resourceType, name, ?group = resourceGroup))
     static member getInstrumentationKey (resourceId:ResourceId) =
         ArmExpression
             .reference(resourceId)
@@ -24,6 +32,8 @@ type AppInsightsConfig =
       Tags : Map<string,string> }
     /// Gets the ARM expression path to the instrumentation key of this App Insights instance.
     member this.InstrumentationKey = AppInsights.getInstrumentationKey(this.Name, resourceType = this.InstanceKind.ResourceType)
+    /// Gets the ARM expression path to the connection string of this App Insights instance.
+    member this.ConnectionString = AppInsights.getConnectionString(this.Name, resourceType = this.InstanceKind.ResourceType)
     interface IBuilder with
         member this.ResourceId = components.resourceId this.Name
         member this.BuildResources location = [
